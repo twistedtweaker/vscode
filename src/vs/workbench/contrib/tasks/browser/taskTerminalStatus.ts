@@ -57,6 +57,9 @@ export class TaskTerminalStatus extends Disposable {
 		terminal.statusList.add(status);
 		problemMatcher.onDidFindFirstMatch(() => {
 			this._marker = terminal.registerMarker();
+			if (this._marker) {
+				this._register(this._marker);
+			}
 		});
 		problemMatcher.onDidFindErrors(() => {
 			if (this._marker) {
