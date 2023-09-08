@@ -5,6 +5,7 @@
 
 import { ok } from 'assert';
 import { Emitter, Event } from 'vs/base/common/event';
+import { ensureNoDisposablesAreLeakedInTestSuite } from 'vs/base/test/common/utils';
 import { AudioCue, IAudioCueService } from 'vs/platform/audioCues/browser/audioCueService';
 import { TestConfigurationService } from 'vs/platform/configuration/test/common/testConfigurationService';
 import { TestInstantiationService } from 'vs/platform/instantiation/test/common/instantiationServiceMock';
@@ -67,6 +68,7 @@ suite('Task Terminal Status', () => {
 	let testTask: Task;
 	let problemCollector: AbstractProblemCollector;
 	let audioCueService: TestAudioCueService;
+	ensureNoDisposablesAreLeakedInTestSuite();
 	setup(() => {
 		instantiationService = new TestInstantiationService();
 		taskService = new TestTaskService();
