@@ -12,7 +12,7 @@ import { URI } from 'vs/base/common/uri';
 import { getSystemShell } from 'vs/base/node/shell';
 import { ILogService, LogLevel } from 'vs/platform/log/common/log';
 import { RequestStore } from 'vs/platform/terminal/common/requestStore';
-import { IProcessDataEvent, IProcessReadyEvent, IPtyService, IRawTerminalInstanceLayoutInfo, IReconnectConstants, IShellLaunchConfig, ITerminalInstanceLayoutInfoById, ITerminalLaunchError, ITerminalsLayoutInfo, ITerminalTabLayoutInfoById, TerminalIcon, IProcessProperty, TitleEventSource, ProcessPropertyType, IProcessPropertyMap, IFixedTerminalDimensions, IPersistentTerminalProcessLaunchConfig, ICrossVersionSerializedTerminalState, ISerializedTerminalState, ITerminalProcessOptions, IPtyHostLatencyMeasurement } from 'vs/platform/terminal/common/terminal';
+import { IProcessDataEvent, IProcessReadyEvent, IPtyService, IRawTerminalInstanceLayoutInfo, IReconnectConstants, IShellLaunchConfig, ITerminalInstanceLayoutInfoById, ITerminalLaunchError, ITerminalsLayoutInfo, ITerminalTabLayoutInfoById, TerminalIcon, IProcessProperty, TitleEventSource, ProcessPropertyType, IProcessPropertyMap, IFixedTerminalDimensions, IPersistentTerminalProcessLaunchConfig, ICrossVersionSerializedTerminalState, ISerializedTerminalState, ITerminalProcessOptions, IPtyHostLatencyMeasurement, WindowsShellType } from 'vs/platform/terminal/common/terminal';
 import { TerminalDataBufferer } from 'vs/platform/terminal/common/terminalDataBuffering';
 import { escapeNonWindowsPath } from 'vs/platform/terminal/common/terminalEnvironment';
 import { Terminal as XtermTerminal } from 'xterm-headless';
@@ -721,6 +721,7 @@ class PersistentTerminalProcess extends Disposable {
 			reviveBuffer,
 			processLaunchOptions.options.shellIntegration.nonce,
 			shouldPersistTerminal ? rawReviveBuffer : undefined,
+			isWindows ? this._terminalProcess.shellType as WindowsShellType : undefined,
 			this._logService
 		);
 		if (name) {
@@ -988,6 +989,7 @@ class XtermSerializer implements ITerminalSerializer {
 		reviveBufferWithRestoreMessage: string | undefined,
 		shellIntegrationNonce: string,
 		private _rawReviveBuffer: string | undefined,
+		shellType: WindowsShellType | undefined,
 		logService: ILogService
 	) {
 		this._xterm = new XtermTerminal({
@@ -1000,7 +1002,7 @@ class XtermSerializer implements ITerminalSerializer {
 			this._xterm.writeln(reviveBufferWithRestoreMessage);
 		}
 		this.setUnicodeVersion(unicodeVersion);
-		this._shellIntegrationAddon = new ShellIntegrationAddon(shellIntegrationNonce, true, undefined, logService, undefined);
+		this._shellIntegrationAddon = new ShellIntegrationAddon(shellIntegrationNonce, true, undefined, logService, shellType);
 		this._xterm.loadAddon(this._shellIntegrationAddon);
 	}
 

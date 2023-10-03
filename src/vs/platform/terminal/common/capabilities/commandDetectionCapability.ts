@@ -386,8 +386,11 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 				const line = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker.line);
 				if (line) {
 					this._currentCommand.commandStartLineContent = line.translateToString(true);
-
-					if (!this._currentCommand.commandStartLineContent.match(this._shellType === WindowsShellType.PowerShell ? '.*PS.*' : this._shellType === WindowsShellType.CommandPrompt ? /[A-Z]:\\*>/ : '')) {
+					const promptRegex: RegExp | undefined = this._shellType === WindowsShellType.PowerShell ? /.*PS.*/ : this._shellType === WindowsShellType.CommandPrompt ? /[A-Z]:\\*>/ : undefined;
+					this._logService.info('prompt regex', this._shellType, promptRegex);
+					if (promptRegex && !this._currentCommand.commandStartLineContent.match(promptRegex)) {
+						this._logService.debug('CommandDetectionCapability#invalidatedCommand');
+						this._currentCommand.isInvalid = true;
 						this._onCommandInvalidated.fire([{ marker: this._currentCommand.commandStartMarker } as ITerminalCommand]);
 						return;
 					}
