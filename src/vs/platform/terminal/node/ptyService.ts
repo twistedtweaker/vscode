@@ -12,7 +12,7 @@ import { URI } from 'vs/base/common/uri';
 import { getSystemShell } from 'vs/base/node/shell';
 import { ILogService, LogLevel } from 'vs/platform/log/common/log';
 import { RequestStore } from 'vs/platform/terminal/common/requestStore';
-import { IProcessDataEvent, IProcessReadyEvent, IPtyService, IRawTerminalInstanceLayoutInfo, IReconnectConstants, IShellLaunchConfig, ITerminalInstanceLayoutInfoById, ITerminalLaunchError, ITerminalsLayoutInfo, ITerminalTabLayoutInfoById, TerminalIcon, IProcessProperty, TitleEventSource, ProcessPropertyType, IProcessPropertyMap, IFixedTerminalDimensions, IPersistentTerminalProcessLaunchConfig, ICrossVersionSerializedTerminalState, ISerializedTerminalState, ITerminalProcessOptions, IPtyHostLatencyMeasurement } from 'vs/platform/terminal/common/terminal';
+import { IProcessDataEvent, IProcessReadyEvent, IPtyService, IRawTerminalInstanceLayoutInfo, IReconnectConstants, IShellLaunchConfig, ITerminalInstanceLayoutInfoById, ITerminalLaunchError, ITerminalsLayoutInfo, ITerminalTabLayoutInfoById, TerminalIcon, IProcessProperty, TitleEventSource, ProcessPropertyType, IProcessPropertyMap, IFixedTerminalDimensions, IPersistentTerminalProcessLaunchConfig, ICrossVersionSerializedTerminalState, ISerializedTerminalState, ITerminalProcessOptions, IPtyHostLatencyMeasurement, TerminalShellType } from 'vs/platform/terminal/common/terminal';
 import { TerminalDataBufferer } from 'vs/platform/terminal/common/terminalDataBuffering';
 import { escapeNonWindowsPath } from 'vs/platform/terminal/common/terminalEnvironment';
 import { Terminal as XtermTerminal } from 'xterm-headless';
@@ -191,7 +191,8 @@ export class PtyService extends Disposable implements IPtyService {
 						processLaunchConfig: persistentProcess.processLaunchOptions,
 						unicodeVersion: persistentProcess.unicodeVersion,
 						replayEvent: await persistentProcess.serializeNormalBuffer(),
-						timestamp: Date.now()
+						timestamp: Date.now(),
+						shellType: persistentProcess.shellType
 					});
 				}));
 			}
@@ -237,7 +238,8 @@ export class PtyService extends Disposable implements IPtyService {
 			terminal.processDetails.workspaceId,
 			terminal.processDetails.workspaceName,
 			true,
-			terminal.replayEvent.events[0].data
+			terminal.shellType,
+			terminal.replayEvent.events[0].data,
 		);
 		// Don't start the process here as there's no terminal to answer CPR
 		const oldId = this._getRevivingProcessId(workspaceId, terminal.id);
@@ -264,7 +266,8 @@ export class PtyService extends Disposable implements IPtyService {
 		workspaceId: string,
 		workspaceName: string,
 		isReviving?: boolean,
-		rawReviveBuffer?: string
+		shellType?: TerminalShellType,
+		rawReviveBuffer?: string,
 	): Promise<number> {
 		if (shellLaunchConfig.attachPersistentProcess) {
 			throw new Error('Attempt to create a process when attach object was provided');
@@ -276,7 +279,7 @@ export class PtyService extends Disposable implements IPtyService {
 			executableEnv,
 			options
 		};
-		const persistentProcess = new PersistentTerminalProcess(id, process, workspaceId, workspaceName, shouldPersist, cols, rows, processLaunchOptions, unicodeVersion, this._reconnectConstants, this._logService, isReviving && typeof shellLaunchConfig.initialText === 'string' ? shellLaunchConfig.initialText : undefined, rawReviveBuffer, shellLaunchConfig.icon, shellLaunchConfig.color, shellLaunchConfig.name, shellLaunchConfig.fixedDimensions);
+		const persistentProcess = new PersistentTerminalProcess(id, process, workspaceId, workspaceName, shouldPersist, cols, rows, processLaunchOptions, unicodeVersion, this._reconnectConstants, this._logService, isReviving && typeof shellLaunchConfig.initialText === 'string' ? shellLaunchConfig.initialText : undefined, rawReviveBuffer, shellLaunchConfig.icon, shellLaunchConfig.color, shellLaunchConfig.name, shellLaunchConfig.fixedDimensions, shellType);
 		process.onProcessExit(event => {
 			persistentProcess.dispose();
 			this._ptys.delete(id);
@@ -664,6 +667,7 @@ class PersistentTerminalProcess extends Disposable {
 	get color(): string | undefined { return this._color; }
 	get fixedDimensions(): IFixedTerminalDimensions | undefined { return this._fixedDimensions; }
 	get hasChildProcesses(): boolean { return this._terminalProcess.hasChildProcesses; }
+	get shellType(): TerminalShellType | undefined { return this._terminalProcess.shellType; }
 
 	setTitle(title: string, titleSource: TitleEventSource): void {
 		if (titleSource === TitleEventSource.Api) {
@@ -708,7 +712,8 @@ class PersistentTerminalProcess extends Disposable {
 		private _icon?: TerminalIcon,
 		private _color?: string,
 		name?: string,
-		fixedDimensions?: IFixedTerminalDimensions
+		fixedDimensions?: IFixedTerminalDimensions,
+		shellType?: TerminalShellType
 	) {
 		super();
 		this._interactionState = new MutationLogger(`Persistent process "${this._persistentProcessId}" interaction state`, InteractionState.None, this._logService);
@@ -721,7 +726,8 @@ class PersistentTerminalProcess extends Disposable {
 			reviveBuffer,
 			processLaunchOptions.options.shellIntegration.nonce,
 			shouldPersistTerminal ? rawReviveBuffer : undefined,
-			this._logService
+			this._logService,
+			shellType
 		);
 		if (name) {
 			this.setTitle(name, TitleEventSource.Api);
@@ -988,7 +994,8 @@ class XtermSerializer implements ITerminalSerializer {
 		reviveBufferWithRestoreMessage: string | undefined,
 		shellIntegrationNonce: string,
 		private _rawReviveBuffer: string | undefined,
-		logService: ILogService
+		logService: ILogService,
+		shellType?: TerminalShellType
 	) {
 		this._xterm = new XtermTerminal({
 			cols,
@@ -1000,7 +1007,7 @@ class XtermSerializer implements ITerminalSerializer {
 			this._xterm.writeln(reviveBufferWithRestoreMessage);
 		}
 		this.setUnicodeVersion(unicodeVersion);
-		this._shellIntegrationAddon = new ShellIntegrationAddon(shellIntegrationNonce, true, undefined, logService);
+		this._shellIntegrationAddon = new ShellIntegrationAddon(shellIntegrationNonce, true, undefined, logService, shellType);
 		this._xterm.loadAddon(this._shellIntegrationAddon);
 	}
 

@@ -399,6 +399,7 @@ export interface ISerializedTerminalState {
 	unicodeVersion: '6' | '11';
 	replayEvent: IPtyHostProcessReplayEvent;
 	timestamp: number;
+	shellType?: TerminalShellType;
 }
 
 export interface IPersistentTerminalProcessLaunchConfig {

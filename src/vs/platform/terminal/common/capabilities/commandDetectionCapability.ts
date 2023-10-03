@@ -9,7 +9,7 @@ import { Emitter } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ICommandDetectionCapability, TerminalCapability, ITerminalCommand, IHandleCommandOptions, ICommandInvalidationRequest, CommandInvalidationReason, ISerializedTerminalCommand, ISerializedCommandDetectionCapability } from 'vs/platform/terminal/common/capabilities/capabilities';
-import { ITerminalOutputMatch, ITerminalOutputMatcher } from 'vs/platform/terminal/common/terminal';
+import { ITerminalOutputMatch, ITerminalOutputMatcher, TerminalShellType, WindowsShellType } from 'vs/platform/terminal/common/terminal';
 
 // Importing types is safe in any layer
 // eslint-disable-next-line local/code-import-patterns
@@ -116,7 +116,8 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 
 	constructor(
 		private readonly _terminal: Terminal,
-		private readonly _logService: ILogService
+		private readonly _logService: ILogService,
+		private readonly _shellType?: TerminalShellType
 	) {
 		super();
 		this._dimensions = {
@@ -356,7 +357,6 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 			m.dispose();
 		}
 		this._commandMarkers.length = 0;
-
 		this._onCommandStarted.fire({ marker: options?.marker || this._currentCommand.commandStartMarker, markProperties: options?.markProperties } as ITerminalCommand);
 		this._logService.debug('CommandDetectionCapability#handleCommandStart', this._currentCommand.commandStartX, this._currentCommand.commandStartMarker?.line);
 	}
@@ -385,6 +385,10 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 				const line = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker.line);
 				if (line) {
 					this._currentCommand.commandStartLineContent = line.translateToString(true);
+					if (!this._currentCommand.commandStartLineContent.match(this._shellType === WindowsShellType.PowerShell ? '.*PS.*' : this._shellType === WindowsShellType.CommandPrompt ? /[A-Z]:\\*>/ : '')) {
+						this._onCommandInvalidated.fire([{ marker: this._currentCommand.commandStartMarker } as ITerminalCommand]);
+						return;
+					}
 				}
 			}
 			this._onCommandStarted.fire({ marker: this._currentCommand.commandStartMarker } as ITerminalCommand);

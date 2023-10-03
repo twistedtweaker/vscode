@@ -147,6 +147,7 @@ export interface IDetachedXTermOptions {
 	capabilities?: ITerminalCapabilityStore;
 	readonly?: boolean;
 	processInfo: ITerminalProcessInfo;
+	shellType?: TerminalShellType;
 }
 
 /**

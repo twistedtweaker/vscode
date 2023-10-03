@@ -1408,7 +1408,8 @@ class TerminalMessagePeek extends Disposable implements IPeekOutputRenderer {
 						? theme.getColor(PANEL_BACKGROUND)
 						: theme.getColor(SIDE_BAR_BACKGROUND);
 				},
-			}
+			},
+			shellType: undefined
 		});
 	}
 

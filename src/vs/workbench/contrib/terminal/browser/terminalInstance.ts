@@ -735,7 +735,8 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 			this.capabilities,
 			this._processManager.shellIntegrationNonce,
 			this._terminalSuggestWidgetVisibleContextKey,
-			disableShellIntegrationReporting
+			disableShellIntegrationReporting,
+			this.shellType
 		);
 		this.xterm = xterm;
 		this.updateAccessibilitySupport();

@@ -1012,6 +1012,7 @@ export class TerminalService extends Disposable implements ITerminalService {
 			'',
 			undefined,
 			false,
+			options.shellType
 		);
 
 		if (options.readonly) {
