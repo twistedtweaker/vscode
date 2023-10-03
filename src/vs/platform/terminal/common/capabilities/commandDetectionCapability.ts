@@ -362,6 +362,7 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 	}
 
 	private _handleCommandStartWindows(): void {
+		const oldCurrentCommand = this._currentCommand;
 		this._currentCommand.commandStartX = this._terminal.buffer.active.cursorX;
 
 		// On Windows track all cursor movements after the command start sequence
@@ -394,6 +395,7 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 					this._currentCommand.isInvalid = true;
 					this._onCurrentCommandInvalidated.fire({ reason: CommandInvalidationReason.Windows });
 					this._onCommandInvalidated.fire([{ marker: this._currentCommand.commandStartMarker } as ITerminalCommand]);
+					this._currentCommand = oldCurrentCommand;
 					return;
 				}
 			}
