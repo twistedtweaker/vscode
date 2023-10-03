@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IShellIntegration, ShellIntegrationStatus } from 'vs/platform/terminal/common/terminal';
+import { IShellIntegration, ShellIntegrationStatus, WindowsShellType } from 'vs/platform/terminal/common/terminal';
 import { Disposable, dispose, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { TerminalCapabilityStore } from 'vs/platform/terminal/common/capabilities/terminalCapabilityStore';
 import { CommandDetectionCapability } from 'vs/platform/terminal/common/capabilities/commandDetectionCapability';
@@ -209,7 +209,8 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 		private _nonce: string,
 		private readonly _disableTelemetry: boolean | undefined,
 		private readonly _telemetryService: ITelemetryService | undefined,
-		private readonly _logService: ILogService
+		private readonly _logService: ILogService,
+		private readonly _shellType?: WindowsShellType
 	) {
 		super();
 		this._register(toDisposable(() => {
@@ -513,7 +514,7 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 	protected _createOrGetCommandDetection(terminal: Terminal): ICommandDetectionCapability {
 		let commandDetection = this.capabilities.get(TerminalCapability.CommandDetection);
 		if (!commandDetection) {
-			commandDetection = this._register(new CommandDetectionCapability(terminal, this._logService));
+			commandDetection = this._register(new CommandDetectionCapability(terminal, this._logService, this._shellType));
 			this.capabilities.add(TerminalCapability.CommandDetection, commandDetection);
 		}
 		return commandDetection;

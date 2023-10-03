@@ -9,7 +9,7 @@ import { debounce, memoize } from 'vs/base/common/decorators';
 import { DynamicListEventMultiplexer, Emitter, Event, IDynamicListEventMultiplexer } from 'vs/base/common/event';
 import { Disposable, dispose, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
-import { isMacintosh, isWeb } from 'vs/base/common/platform';
+import { isMacintosh, isWeb, isWindows } from 'vs/base/common/platform';
 import { URI } from 'vs/base/common/uri';
 import { IKeyMods } from 'vs/platform/quickinput/common/quickInput';
 import * as nls from 'vs/nls';
@@ -19,7 +19,7 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { IDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { INotificationService } from 'vs/platform/notification/common/notification';
-import { ICreateContributedTerminalProfileOptions, IPtyHostAttachTarget, IRawTerminalInstanceLayoutInfo, IRawTerminalTabLayoutInfo, IShellLaunchConfig, ITerminalBackend, ITerminalLaunchError, ITerminalLogService, ITerminalsLayoutInfo, ITerminalsLayoutInfoById, TerminalExitReason, TerminalLocation, TerminalLocationString, TitleEventSource } from 'vs/platform/terminal/common/terminal';
+import { ICreateContributedTerminalProfileOptions, IPtyHostAttachTarget, IRawTerminalInstanceLayoutInfo, IRawTerminalTabLayoutInfo, IShellLaunchConfig, ITerminalBackend, ITerminalLaunchError, ITerminalLogService, ITerminalsLayoutInfo, ITerminalsLayoutInfoById, TerminalExitReason, TerminalLocation, TerminalLocationString, TitleEventSource, WindowsShellType } from 'vs/platform/terminal/common/terminal';
 import { formatMessageForTerminal } from 'vs/platform/terminal/common/terminalStrings';
 import { iconForeground } from 'vs/platform/theme/common/colorRegistry';
 import { getIconRegistry } from 'vs/platform/theme/common/iconRegistry';
@@ -1012,6 +1012,7 @@ export class TerminalService extends Disposable implements ITerminalService {
 			'',
 			undefined,
 			false,
+			isWindows ? this._terminalShellTypeContextKey.get() as WindowsShellType : undefined
 		);
 
 		if (options.readonly) {

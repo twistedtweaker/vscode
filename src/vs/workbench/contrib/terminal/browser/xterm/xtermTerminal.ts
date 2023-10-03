@@ -16,7 +16,7 @@ import { ConfigurationTarget, IConfigurationService } from 'vs/platform/configur
 import { TerminalConfigHelper } from 'vs/workbench/contrib/terminal/browser/terminalConfigHelper';
 import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
-import { IShellIntegration, ITerminalLogService, TerminalSettingId } from 'vs/platform/terminal/common/terminal';
+import { IShellIntegration, ITerminalLogService, TerminalSettingId, WindowsShellType } from 'vs/platform/terminal/common/terminal';
 import { ITerminalFont, ITerminalConfiguration } from 'vs/workbench/contrib/terminal/common/terminal';
 import { isSafari } from 'vs/base/browser/browser';
 import { IMarkTracker, IInternalXtermTerminal, IXtermTerminal, ISuggestController, IXtermColorProvider, XtermTerminalConstants, IXtermAttachToElementOptions, IDetachedXtermTerminal } from 'vs/workbench/contrib/terminal/browser/terminal';
@@ -195,6 +195,7 @@ export class XtermTerminal extends Disposable implements IXtermTerminal, IDetach
 		shellIntegrationNonce: string,
 		private readonly _terminalSuggestWidgetVisibleContextKey: IContextKey<boolean> | undefined,
 		disableShellIntegrationReporting: boolean,
+		shellType: WindowsShellType | undefined,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@ITerminalLogService private readonly _logService: ITerminalLogService,
@@ -276,7 +277,7 @@ export class XtermTerminal extends Disposable implements IXtermTerminal, IDetach
 		this._decorationAddon = this._instantiationService.createInstance(DecorationAddon, this._capabilities);
 		this._register(this._decorationAddon.onDidRequestRunCommand(e => this._onDidRequestRunCommand.fire(e)));
 		this.raw.loadAddon(this._decorationAddon);
-		this._shellIntegrationAddon = new ShellIntegrationAddon(shellIntegrationNonce, disableShellIntegrationReporting, this._telemetryService, this._logService);
+		this._shellIntegrationAddon = new ShellIntegrationAddon(shellIntegrationNonce, disableShellIntegrationReporting, this._telemetryService, this._logService, shellType);
 		this.raw.loadAddon(this._shellIntegrationAddon);
 
 		this._anyTerminalFocusContextKey = TerminalContextKeys.focusInAny.bindTo(contextKeyService);

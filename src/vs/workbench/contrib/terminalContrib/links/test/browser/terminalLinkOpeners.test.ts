@@ -124,7 +124,7 @@ suite('Workbench - TerminalLinkOpeners', () => {
 
 		setup(() => {
 			capabilities = store.add(new TerminalCapabilityStore());
-			commandDetection = store.add(instantiationService.createInstance(TestCommandDetectionCapability, xterm));
+			commandDetection = store.add(instantiationService.createInstance(TestCommandDetectionCapability, xterm, new NullLogService()));
 			capabilities.add(TerminalCapability.CommandDetection, commandDetection);
 		});
 
