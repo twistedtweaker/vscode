@@ -10,6 +10,9 @@ import { ITerminalLogService } from 'vs/platform/terminal/common/terminal';
 import type { Terminal, ITerminalAddon } from 'xterm';
 import { debounce } from 'vs/base/common/decorators';
 import { addDisposableListener } from 'vs/base/browser/dom';
+import { ICurrentPartialCommand } from 'vs/platform/terminal/common/capabilities/commandDetectionCapability';
+import { isWindows } from 'vs/base/common/platform';
+import { ArrayEdit } from 'vs/workbench/services/textMate/browser/arrayOperation';
 
 export interface ITextAreaData {
 	content: string;
@@ -20,6 +23,7 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 	private _terminal: Terminal | undefined;
 	private _listeners = this._register(new MutableDisposable<DisposableStore>());
 	private _currentCommand: string | undefined;
+	private _currentPartialCommand: ICurrentPartialCommand | undefined;
 	private _cursorX: number | undefined;
 
 	activate(terminal: Terminal): void {
@@ -86,13 +90,13 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			return;
 		}
 		const commandCapability = this._capabilities.get(TerminalCapability.CommandDetection);
-		const currentCommand = commandCapability?.currentCommand;
-		if (!currentCommand) {
+		this._currentPartialCommand = commandCapability?.currentCommand;
+		if (!this._currentPartialCommand) {
 			this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no current command`);
 			return;
 		}
 		const buffer = this._terminal.buffer.active;
-		const lineNumber = currentCommand.commandStartMarker?.line;
+		const lineNumber = this._currentPartialCommand.commandStartMarker?.line;
 		if (!lineNumber) {
 			return;
 		}
@@ -101,9 +105,24 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no line`);
 			return;
 		}
-		if (currentCommand.commandStartX !== undefined) {
-			this._currentCommand = commandLine.substring(currentCommand.commandStartX);
-			this._cursorX = buffer.cursorX - currentCommand.commandStartX;
+		if (isWindows && !commandLine.match((/.*PS.*|[A-Z]:\\*>/)) && this._capabilities.get(TerminalCapability.CommandDetection)?.commands.length) {
+			const commands = this._capabilities.get(TerminalCapability.CommandDetection)?.commands;
+			const command = commands?.slice().reverse().find(c => c.marker?.line && this._currentPartialCommand?.commandStartMarker?.line && c.marker.line < this._currentPartialCommand?.commandStartMarker?.line);
+			this._currentPartialCommand = command;
+			const buffer = this._terminal.buffer.active;
+			const lineNumber = this._currentPartialCommand?.commandStartMarker?.line;
+			if (!lineNumber) {
+				return;
+			}
+			const commandLine = buffer.getLine(lineNumber)?.translateToString(true);
+			if (!commandLine) {
+				this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no line`);
+				return;
+			}
+		}
+		if (this._currentPartialCommand?.commandStartX !== undefined) {
+			this._currentCommand = commandLine.substring(this._currentPartialCommand.commandStartX);
+			this._cursorX = buffer.cursorX - this._currentPartialCommand.commandStartX;
 		} else {
 			this._currentCommand = undefined;
 			this._cursorX = undefined;
