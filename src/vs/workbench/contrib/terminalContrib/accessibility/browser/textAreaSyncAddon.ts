@@ -63,8 +63,10 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			return;
 		}
 
-		this._updateCommandAndCursor();
+		const scanUp = this._updateCommandAndCursor();
+		if (scanUp) {
 
+		}
 		if (this._currentCommand !== textArea.value) {
 			textArea.value = this._currentCommand || '';
 			this._logService.debug(`TextAreaSyncAddon#syncTextArea: text changed to "${this._currentCommand}"`);
@@ -81,21 +83,31 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 		}
 	}
 
-	private _updateCommandAndCursor(): void {
+	private _updateCommandAndCursor(): boolean | undefined {
 		if (!this._terminal) {
 			return;
 		}
 		const commandCapability = this._capabilities.get(TerminalCapability.CommandDetection);
-		const currentCommand = commandCapability?.currentCommand;
+		let currentCommand = commandCapability?.currentCommand;
 		if (!currentCommand) {
 			this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no current command`);
 			return;
+		}
+		if (currentCommand.isInvalid) {
+			const index = commandCapability?.commands.findIndex(c => c.marker!.id < currentCommand!.promptStartMarker!.id);
+			if (!!index) {
+				currentCommand = commandCapability?.commands[index];
+			}
+			if (!currentCommand) {
+				return;
+			}
 		}
 		const buffer = this._terminal.buffer.active;
 		const lineNumber = currentCommand.commandStartMarker?.line;
 		if (!lineNumber) {
 			return;
 		}
+
 		const commandLine = buffer.getLine(lineNumber)?.translateToString(true);
 		if (!commandLine) {
 			this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no line`);
@@ -109,5 +121,6 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			this._cursorX = undefined;
 			this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no commandStartX`);
 		}
+		return;
 	}
 }
