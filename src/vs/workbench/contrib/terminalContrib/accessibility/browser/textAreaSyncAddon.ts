@@ -63,11 +63,9 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			return;
 		}
 
-		const scanUp = this._updateCommandAndCursor();
-		if (scanUp) {
+		this._updateCommandAndCursor();
 
-		}
-		if (this._currentCommand !== textArea.value) {
+		if (this._currentCommand && this._currentCommand !== textArea.value) {
 			textArea.value = this._currentCommand || '';
 			this._logService.debug(`TextAreaSyncAddon#syncTextArea: text changed to "${this._currentCommand}"`);
 		} else if (!this._currentCommand) {
@@ -83,7 +81,7 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 		}
 	}
 
-	private _updateCommandAndCursor(): boolean | undefined {
+	private _updateCommandAndCursor() {
 		if (!this._terminal) {
 			return;
 		}

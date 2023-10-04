@@ -388,8 +388,8 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 				}
 				// HACK: If conpty does not behave, guess if this is a prompt
 				// TODO: compare to lines above
-				if (!this._currentCommand.commandStartLineContent?.match(/.*PS.*|[A-Z]:\\*>/)) {
-					this._logService.debug('CommandDetectionCapability#invalidatedCommand#notAPrompt');
+				if (!this._currentCommand.commandStartLineContent?.match(/PS|[A-Z]:\\*>/)) {
+					this._logService.debug('CommandDetectionCapability#invalidatedCommand#notAPrompt', this._currentCommand.commandStartLineContent);
 					this._currentCommand.isInvalid = true;
 					this._onCurrentCommandInvalidated.fire({ reason: CommandInvalidationReason.Windows });
 					this._onCommandInvalidated.fire([{ marker: this._currentCommand.commandStartMarker } as ITerminalCommand]);
