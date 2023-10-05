@@ -105,12 +105,19 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			this._logService.debug(`TextAreaSyncAddon#updateCommandAndCursor: no line`);
 			return;
 		}
-		if (isWindows && !commandLine.match((/.*PS.*|[A-Z]:\\*>/)) && this._capabilities.get(TerminalCapability.CommandDetection)?.commands.length) {
+		this._logService.info('commandLine', commandLine);
+		this._logService.info('match ', commandLine.match((/.*PS.*|[A-Z]:\\*>/)));
+		let isGuessForPrompt = false;
+		// TODO: use backend isWindows somehow
+		if (isWindows && this._currentPartialCommand.isInvalid || !commandLine.match((/.*PS.*>|[A-Z]:\\*>/)) && this._capabilities.get(TerminalCapability.CommandDetection)?.commands.length) {
+			isGuessForPrompt = true;
 			const commands = this._capabilities.get(TerminalCapability.CommandDetection)?.commands;
 			const command = commands?.slice().reverse().find(c => c.marker?.line && this._currentPartialCommand?.commandStartMarker?.line && c.marker.line < this._currentPartialCommand?.commandStartMarker?.line);
+			this._logService.info('reassigned command from {0} to {1}', this._currentPartialCommand, command);
 			this._currentPartialCommand = command;
 			const buffer = this._terminal.buffer.active;
 			const lineNumber = this._currentPartialCommand?.commandStartMarker?.line;
+			this._logService.info('guess', isGuessForPrompt);
 			if (!lineNumber) {
 				return;
 			}
@@ -120,8 +127,16 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 				return;
 			}
 		}
+		this._logService.info('guess', isGuessForPrompt);
 		if (this._currentPartialCommand?.commandStartX !== undefined) {
-			this._currentCommand = commandLine.substring(this._currentPartialCommand.commandStartX);
+			const start = this._currentPartialCommand.commandStartX;
+			this._currentCommand = commandLine.substring(this._currentPartialCommand.commandStartX) || commandLine;
+			if (isGuessForPrompt) {
+				console.log('matching', this._currentCommand.match(/.*PS.*>|[A-Z]:\\*>/));
+				console.log('matching', this._currentCommand.match(/.*PS.*>|[A-Z]:\\*>/)?.[0]);
+				this._currentCommand = this._currentCommand.match(/.*PS.*>|[A-Z]:\\*>/)?.[0];
+			}
+			this._logService.info('start, end, commandline', start, commandLine, this._currentCommand);
 			this._cursorX = buffer.cursorX - this._currentPartialCommand.commandStartX;
 		} else {
 			this._currentCommand = undefined;
