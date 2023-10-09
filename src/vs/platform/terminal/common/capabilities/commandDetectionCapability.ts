@@ -395,13 +395,17 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 						return;
 					}
 				} else {
+					let timedOut = false;
+					setTimeout(() => {
+						timedOut = true;
+					}, 20);
 					// poll until it's available
-					while (!this._currentCommand.commandStartLineContent?.length) {
+					while (!timedOut && !this._currentCommand.commandStartLineContent?.length) {
 						timeout(5).then(() => {
 							this._currentCommand.commandStartLineContent = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker!.line)?.translateToString(true);
 						});
 					}
-					if (!WINDOWS_PROMPT_REGEX.test(this._currentCommand.commandStartLineContent)) {
+					if (this._currentCommand.commandStartLineContent !== undefined && !WINDOWS_PROMPT_REGEX.test(this._currentCommand.commandStartLineContent)) {
 						this._currentCommand.isInvalid = true;
 						this._onCurrentCommandInvalidated.fire({ reason: CommandInvalidationReason.Windows });
 						this._logService.debug('CommandDetectionCapability#_commandInvalidatedNotPrompt', this._currentCommand.commandStartLineContent);
