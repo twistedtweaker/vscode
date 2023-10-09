@@ -380,11 +380,31 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 					}
 				});
 			}
+			const WINDOWS_PROMPT_REGEX = /.*PS.*>|[A-Z]:\\*>/;
 			this._currentCommand.commandStartMarker = this._terminal.registerMarker(0);
 			if (this._currentCommand.commandStartMarker) {
 				const line = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker.line);
 				if (line) {
 					this._currentCommand.commandStartLineContent = line.translateToString(true);
+				}
+				if (this._currentCommand.commandStartLineContent?.length) {
+					if (!WINDOWS_PROMPT_REGEX.test(this._currentCommand.commandStartLineContent)) {
+						this._currentCommand.isInvalid = true;
+						this._onCurrentCommandInvalidated.fire({ reason: CommandInvalidationReason.Windows });
+						this._logService.debug('CommandDetectionCapability#_commandInvalidatedNotPrompt', this._currentCommand.commandStartLineContent);
+						return;
+					}
+				} else {
+					// poll until it's available
+					while (!this._currentCommand.commandStartLineContent?.length) {
+						this._currentCommand.commandStartLineContent = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker.line)?.translateToString(true);
+					}
+					if (!WINDOWS_PROMPT_REGEX.test(this._currentCommand.commandStartLineContent)) {
+						this._currentCommand.isInvalid = true;
+						this._onCurrentCommandInvalidated.fire({ reason: CommandInvalidationReason.Windows });
+						this._logService.debug('CommandDetectionCapability#_commandInvalidatedNotPrompt', this._currentCommand.commandStartLineContent);
+						return;
+					}
 				}
 			}
 			this._onCommandStarted.fire({ marker: this._currentCommand.commandStartMarker } as ITerminalCommand);
