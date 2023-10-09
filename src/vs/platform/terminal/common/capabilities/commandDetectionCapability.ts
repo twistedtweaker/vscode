@@ -397,7 +397,9 @@ export class CommandDetectionCapability extends Disposable implements ICommandDe
 				} else {
 					// poll until it's available
 					while (!this._currentCommand.commandStartLineContent?.length) {
-						this._currentCommand.commandStartLineContent = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker.line)?.translateToString(true);
+						timeout(5).then(() => {
+							this._currentCommand.commandStartLineContent = this._terminal.buffer.active.getLine(this._currentCommand.commandStartMarker!.line)?.translateToString(true);
+						});
 					}
 					if (!WINDOWS_PROMPT_REGEX.test(this._currentCommand.commandStartLineContent)) {
 						this._currentCommand.isInvalid = true;
